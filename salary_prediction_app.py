@@ -152,20 +152,24 @@ def main():
         st.warning("Please upload a dataset to proceed.")
         st.stop()
 
+    # Train and find best model once
+    results, best_model, preprocessor, num_features, cat_features = train_models(df)
+    best_model_name = max(results.items(), key=lambda x: x[1][0])[0]
+
     tab1, tab2, tab3 = st.tabs(["📊 Data Analysis", "🧠 Model Comparison", "🔮 Prediction"])
 
     with tab1:
         explore_data(df)
 
     with tab2:
-        results, best_model, preprocessor, num_features, cat_features = train_models(df)
         st.subheader("🔬 Model Accuracy Comparison")
         for name, (acc, _) in results.items():
             st.write(f"**{name}**: {acc*100:.2f}%")
-        st.success(f"✅ Best Model: XGBoost with {max(r[0] for r in results.values())*100:.2f}% accuracy")
+        st.success(f"✅ Best Model: {best_model_name} with {max(r[0] for r in results.values())*100:.2f}% accuracy")
 
     with tab3:
         st.subheader("📝 Enter Employee Details")
+        st.markdown(f"🧠 **Model Used for Prediction:** {best_model_name}")
 
         age = st.number_input("Age", 17, 90, 30)
         workclass = st.selectbox("Workclass", df["workclass"].unique())
@@ -178,32 +182,30 @@ def main():
         hours_per_week = st.slider("Hours per Week", 1, 99, 40)
 
         user_input = {
-    'age': [age],
-    'workclass': [workclass],
-    'fnlwgt': [200000],  # or any fixed number
-    'education': [education],
-    'educational-num': [10],  # optional: derive from education if needed
-    'marital-status': [marital_status],
-    'occupation': [occupation],
-    'relationship': ['Not-in-family'],  # or make it a dropdown if needed
-    'race': ['White'],  # or add as input
-    'gender': [gender],
-    'capital-gain': [capital_gain],
-    'capital-loss': [capital_loss],
-    'hours-per-week': [hours_per_week],
-    'native-country': ['United-States']  # optional default
-}
-
+            'age': [age],
+            'workclass': [workclass],
+            'fnlwgt': [200000],
+            'education': [education],
+            'educational-num': [10],
+            'marital-status': [marital_status],
+            'occupation': [occupation],
+            'relationship': ['Not-in-family'],
+            'race': ['White'],
+            'gender': [gender],
+            'capital-gain': [capital_gain],
+            'capital-loss': [capital_loss],
+            'hours-per-week': [hours_per_week],
+            'native-country': ['United-States']
+        }
 
         if st.button("Predict Salary"):
-            input_df = pd.DataFrame(user_input)  # Convert dict to DataFrame
+            input_df = pd.DataFrame(user_input)
             pred, confidence = predict_input(best_model, preprocessor, input_df)
 
             if pred == 1:
                 st.success(f"💰 Predicted Salary: >50K\n\nConfidence: {confidence:.2f}%")
             else:
                 st.info(f"💵 Predicted Salary: <=50K\n\nConfidence: {confidence:.2f}%")
-
 
 
 if __name__ == "__main__":
